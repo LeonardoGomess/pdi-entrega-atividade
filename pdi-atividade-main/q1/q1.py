@@ -1,33 +1,31 @@
 import cv2
 import numpy as np
 
-#RM94183 - SOMA = 25 -> USANDO O VIDEO (q1A)
-
-
 def verifica_colisao(video_path):
     cap = cv2.VideoCapture(video_path)
+    colisao_ocorreu = False  # Variável para controlar se houve colisão
+    ultrapassagem_ocorreu = False  # Variável para controlar ultrapassagem
     
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
-        # Seu código aqui....... 
-
+        
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         
-        #Detecta a cor vermelha
+        # Detecta a cor vermelha
         lower_red = np.array([0, 120, 70])
         upper_red = np.array([10, 255, 255])
-
-        #Detecta a cor azul
+        
+        # Detecta a cor azul
         lower_blue = np.array([100, 150, 50])
         upper_blue = np.array([140, 255, 255])
         
-        #Cria a mascara, encontra os pixels dentro do intervalo de cor 
+        # Cria a máscara
         mask_red = cv2.inRange(hsv, lower_red, upper_red)
         mask_blue = cv2.inRange(hsv, lower_blue, upper_blue)
         
-        #Faz o contorno das imgs
+        # Encontra os contornos das formas
         contorno_red, _ = cv2.findContours(mask_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         contorno_blue, _ = cv2.findContours(mask_blue, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
@@ -51,27 +49,32 @@ def verifica_colisao(video_path):
             # Desenha um retângulo verde na maior forma
             cv2.rectangle(frame, (pos_x1, pos_y1), (pos_x1 + largura1, pos_y1 + altura1), (0, 255, 0), 2)
 
-            # Verifica colisão entre as formas
-            if (pos_x1 < pos_x2 + largura2 and pos_x1 + largura1 > pos_x2 and pos_y1 < pos_y2 + altura2 and pos_y1 + altura1 > pos_y2):
+            # Verifica colisao entre as formas
+            if not colisao_ocorreu and (pos_x1 < pos_x2 + largura2 and pos_x1 + largura1 > pos_x2 and pos_y1 < pos_y2 + altura2 and pos_y1 + altura1 > pos_y2):
+                colisao_ocorreu = True  
+
+            # Se houve colisao
+            if colisao_ocorreu:
                 cv2.putText(frame, "COLISAO DETECTADA", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
-            # Verifica se a maior forma ultrapassou completamente a menor
-            if pos_x1 > pos_x2 + largura2 or pos_x1 + largura1 < pos_x2 or pos_y1 > pos_y2 + altura2 or pos_y1 + altura1 < pos_y2:
-                cv2.putText(frame, "ULTRAPASSAGEM DETECTADA", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+            # Verifica ultrapassagem apos a colisão
+            if colisao_ocorreu and (pos_x1 > pos_x2 + largura2 or pos_x1 + largura1 < pos_x2 or pos_y1 > pos_y2 + altura2 or pos_y1 + altura1 < pos_y2):
+                ultrapassagem_ocorreu = True  
 
         
-        # Exibe resultado
+            if ultrapassagem_ocorreu:
+                cv2.putText(frame, "ULTRAPASSAGEM DETECTADA", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+        
+
         cv2.imshow('Detecção', frame)
-        # Wait for key 'ESC' to quit
+        
+        # Aguarda tecla 'ESC' para sair
         key = cv2.waitKey(1) & 0xFF
         if key == 27:
             break
 
-    # That's how you exit
     cap.release()
     cv2.destroyAllWindows()
 
-
-video_file = "q1\q1A.mp4" 
-
+video_file = "q1/q1A.mp4"
 verifica_colisao(video_file)
